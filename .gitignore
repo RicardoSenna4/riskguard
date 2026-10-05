@@ -40,3 +40,6 @@ logs/
 
 # Docker
 *.pid
+
+# Python packaging
+*.egg-info/
