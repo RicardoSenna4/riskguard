@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomerService {
-    private final CustomerRepository customers; private final UserRepository users;
-    public CustomerService(CustomerRepository customers, UserRepository users) { this.customers = customers; this.users = users; }
+    private final CustomerRepository customers; private final UserRepository users; private final AuditService audit;
+    public CustomerService(CustomerRepository customers, UserRepository users, AuditService audit) { this.customers = customers; this.users = users; this.audit = audit; }
     @Transactional
     public CustomerDtos.Response create(UUID userId, CustomerDtos.Create request) {
         String document = normalize(request.document());
@@ -42,7 +42,8 @@ public class CustomerService {
     @Transactional
     public CustomerDtos.Response setActive(UUID userId, UUID id, boolean active, boolean elevated) {
         Customer customer = find(userId, id, elevated);
-        if (active) customer.activate(Instant.now()); else customer.deactivate(Instant.now());
+        boolean before = customer.isActive(); if (active) customer.activate(Instant.now()); else customer.deactivate(Instant.now());
+        audit.record("CUSTOMER_STATUS_CHANGED", userId, UUID.randomUUID().toString(), "CUSTOMER", id, java.util.Map.of("active", before), java.util.Map.of("active", active));
         return toResponse(customer);
     }
     private Customer find(UUID userId, UUID id, boolean elevated) {

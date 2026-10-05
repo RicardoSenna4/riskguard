@@ -27,7 +27,7 @@ public class SecurityConfiguration {
     PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper mapper, CorrelationIdFilter correlationIdFilter,
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper mapper, CorrelationIdFilter correlationIdFilter, RateLimitFilter rateLimitFilter, @org.springframework.beans.factory.annotation.Qualifier("corsConfigurationSource") org.springframework.web.cors.CorsConfigurationSource cors,
             @Value("${management.endpoints.web.base-path:/actuator}") String actuatorPath) throws Exception {
         JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
         authorities.setAuthoritiesClaimName("roles");
@@ -37,7 +37,10 @@ public class SecurityConfiguration {
 
         http
             .csrf(AbstractHttpConfigurer::disable)
+            .cors(c -> c.configurationSource(cors))
+            .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'")))
             .addFilterBefore(correlationIdFilter, BearerTokenAuthenticationFilter.class)
+            .addFilterAfter(rateLimitFilter, CorrelationIdFilter.class)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()

@@ -29,15 +29,16 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokens;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokens;
+    private final AuditService audit;
     private final long accessSeconds;
     private final long refreshSeconds;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(UserRepository users, RefreshTokenRepository refreshTokens, PasswordEncoder passwordEncoder,
-            JwtTokenService jwtTokens, @Value("${app.security.jwt.access-expiration-seconds:900}") long accessSeconds,
+            JwtTokenService jwtTokens, AuditService audit, @Value("${app.security.jwt.access-expiration-seconds:900}") long accessSeconds,
             @Value("${app.security.jwt.refresh-expiration-seconds:604800}") long refreshSeconds) {
         this.users = users; this.refreshTokens = refreshTokens; this.passwordEncoder = passwordEncoder;
-        this.jwtTokens = jwtTokens; this.accessSeconds = accessSeconds; this.refreshSeconds = refreshSeconds;
+        this.jwtTokens = jwtTokens; this.audit = audit; this.accessSeconds = accessSeconds; this.refreshSeconds = refreshSeconds;
     }
 
     @Transactional
@@ -46,6 +47,7 @@ public class AuthService {
         if (users.existsByEmail(email)) throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
         UserAccount user = users.save(new UserAccount(UUID.randomUUID(), email,
             passwordEncoder.encode(request.password()), Role.USER, Instant.now()));
+        audit.record("USER_CREATED", user.getId(), UUID.randomUUID().toString(), "USER", user.getId(), null, toResponse(user));
         return toResponse(user);
     }
 
@@ -54,6 +56,7 @@ public class AuthService {
         UserAccount user = users.findByEmail(normalizeEmail(request.email()))
             .filter(candidate -> passwordEncoder.matches(request.password(), candidate.getPasswordHash()))
             .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        audit.record("LOGIN", user.getId(), UUID.randomUUID().toString(), "USER", user.getId(), null, null);
         return issuePair(user);
     }
 
@@ -64,6 +67,7 @@ public class AuthService {
             .filter(token -> token.getRevokedAt() == null && token.getExpiresAt().isAfter(Instant.now()))
             .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
         old.revoke(Instant.now());
+        audit.record("TOKEN_REFRESHED", old.getUser().getId(), UUID.randomUUID().toString(), "USER", old.getUser().getId(), null, null);
         return issuePair(old.getUser());
     }
 
@@ -72,7 +76,7 @@ public class AuthService {
         RefreshToken token = refreshTokens.findByTokenHash(hash(rawToken))
             .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
         if (!token.getUser().getId().equals(userId)) throw new BadCredentialsException("Invalid refresh token");
-        if (token.getRevokedAt() == null) token.revoke(Instant.now());
+        if (token.getRevokedAt() == null) { token.revoke(Instant.now()); audit.record("LOGOUT", userId, UUID.randomUUID().toString(), "USER", userId, null, null); }
     }
 
     @Transactional(readOnly = true)
