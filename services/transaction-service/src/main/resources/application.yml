@@ -30,6 +30,8 @@ management:
     env:
       enabled: false
 app:
+  idempotency:
+    expiration-seconds: ${IDEMPOTENCY_EXPIRATION_SECONDS:86400}
   security:
     jwt:
       secret: ${JWT_SECRET}

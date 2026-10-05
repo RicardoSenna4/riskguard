@@ -67,7 +67,7 @@ A API fica em `http://localhost:8080/api/v1`; verificação de saúde em `/actua
 
 Access token dura 900 s e refresh token 604800 s por padrão; ambos são configuráveis. Novos cadastros sempre recebem `USER`; atribuição de `ANALYST`/`ADMIN` é deliberadamente administrativa e não está exposta por endpoint público. Falta/invalidade de autenticação retorna 401; identidade autenticada sem permissão retorna 403.
 
-Consulte [`docs/api/authentication.md`](docs/api/authentication.md) para contratos e exemplos. O refresh token é devolvido no corpo da resposta neste bootstrap para facilitar o teste; em produção, prefira cookie `HttpOnly`, `Secure`, `SameSite` com política de CSRF apropriada, TLS, rotação de chaves e gestão formal de segredos.
+Consulte [`docs/api/authentication.md`](docs/api/authentication.md) e [`docs/api/customers-and-transactions.md`](docs/api/customers-and-transactions.md) para contratos e exemplos. O refresh token é devolvido no corpo da resposta neste bootstrap para facilitar o teste; em produção, prefira cookie `HttpOnly`, `Secure`, `SameSite` com política de CSRF apropriada, TLS, rotação de chaves e gestão formal de segredos.
 
 ## Configuração
 
@@ -98,7 +98,11 @@ Os testes usam H2 isolado e não exigem containers. Healthchecks e volumes podem
 - [x] Transaction Service: Java 21, Spring Boot, Maven, Actuator, PostgreSQL/Flyway.
 - [x] Cadastro, login, hash BCrypt, JWT de acesso, refresh rotativo e logout.
 - [x] Papéis USER/ANALYST/ADMIN, endpoints protegidos, ownership e respostas 401/403.
-- [ ] Transações, idempotência e Transactional Outbox.
+- [x] Gestão de clientes: CRUD, ativação/inativação, documento único, ownership, validação e paginação.
+- [x] Gestão de transações: criação, consulta, filtros, paginação, status inicial, validações, cliente ativo, external ID único, optimistic locking e histórico.
+- [x] Idempotência HTTP persistida, replay da resposta, conflito por payload diferente, expiração e teste concorrente.
+- [x] Tratamento global de erros com códigos internos, correlation ID e sem stack trace exposta.
+- [ ] Transactional Outbox.
 - [ ] Publicação/consumo Kafka, Fraud Service, frontend, observabilidade completa e CI.
 
 ## Licença
