@@ -7,6 +7,8 @@ export async function api<T>(path:string, options:RequestInit={}){const token=lo
 export const getDashboard=()=>api<Dashboard>('/api/v1/dashboard');
 export const getTransactions=(params:URLSearchParams)=>api<Page<Transaction>>(`/api/v1/transactions?${params}`);
 export const getTransaction=(id:string)=>api<Transaction>(`/api/v1/transactions/${id}`);
+export type TransactionDetails={transaction:Transaction;reasons:string[];correlationId:string|null;timeline:{id:string;status:TransactionStatus;changedAt:string;changedBy:string|null}[];reviews:{id:string;decision:'APPROVE'|'BLOCK';reason:string;automaticDecision:string;originalRiskScore:number;reviewedAt:string}[]};
+export const getTransactionDetails=(id:string)=>api<TransactionDetails>(`/api/v1/transactions/${id}/details`);
 export const getHistory=(id:string)=>api<{id:string;status:TransactionStatus;changedAt:string;changedBy:string|null}[]>(`/api/v1/transactions/${id}/status-history`);
 export const getReviews=(id:string)=>api<any[]>(`/api/v1/analyst/transactions/${id}/reviews`);
 export const submitReview=(id:string,body:{decision:'APPROVE'|'BLOCK';reason:string})=>api(`/api/v1/analyst/transactions/${id}/reviews`,{method:'POST',body:JSON.stringify(body),headers:{'X-Correlation-Id':crypto.randomUUID()}});
