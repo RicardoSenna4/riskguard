@@ -1,0 +1,10 @@
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS risk_score NUMERIC(5,4);
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS risk_model_version VARCHAR(80);
+ALTER TABLE transactions DROP CONSTRAINT IF EXISTS ck_transactions_status;
+ALTER TABLE transactions ADD CONSTRAINT ck_transactions_status CHECK (status IN ('PENDING','APPROVED','REVIEW','BLOCKED','REJECTED','CANCELLED'));
+ALTER TABLE transaction_status_history DROP CONSTRAINT IF EXISTS ck_transaction_history_status;
+ALTER TABLE transaction_status_history ADD CONSTRAINT ck_transaction_history_status CHECK (status IN ('PENDING','APPROVED','REVIEW','BLOCKED','REJECTED','CANCELLED'));
+CREATE TABLE outbox_events (id UUID PRIMARY KEY,event_type VARCHAR(120) NOT NULL,aggregate_id UUID NOT NULL,correlation_id VARCHAR(100) NOT NULL,status VARCHAR(20) NOT NULL,payload TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,next_attempt_at TIMESTAMPTZ NOT NULL,published_at TIMESTAMPTZ,last_error VARCHAR(1000),created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT ck_outbox_status CHECK(status IN ('PENDING','PUBLISHED')));
+CREATE INDEX ix_outbox_pending ON outbox_events(status,next_attempt_at,created_at);
+CREATE TABLE fraud_analyses (id UUID PRIMARY KEY,transaction_id UUID NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,risk_score NUMERIC(5,4) NOT NULL,decision VARCHAR(20) NOT NULL,reasons TEXT NOT NULL,model_version VARCHAR(80) NOT NULL,event_id UUID NOT NULL UNIQUE,correlation_id VARCHAR(100) NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT uq_fraud_analysis_transaction UNIQUE(transaction_id),CONSTRAINT ck_fraud_decision CHECK(decision IN ('APPROVED','REVIEW','BLOCKED')),CONSTRAINT ck_fraud_score CHECK(risk_score >= 0 AND risk_score <= 1));
+CREATE TABLE processed_events (event_id UUID PRIMARY KEY,event_type VARCHAR(120) NOT NULL,processed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);

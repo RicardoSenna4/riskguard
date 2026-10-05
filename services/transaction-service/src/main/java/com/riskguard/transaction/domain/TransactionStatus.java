@@ -1,2 +1,2 @@
 package com.riskguard.transaction.domain;
-public enum TransactionStatus { PENDING, APPROVED, REJECTED, CANCELLED }
+public enum TransactionStatus { PENDING, APPROVED, REVIEW, BLOCKED, REJECTED, CANCELLED }

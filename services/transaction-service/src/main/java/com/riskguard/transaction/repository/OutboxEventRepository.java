@@ -1,0 +1,3 @@
+package com.riskguard.transaction.repository;
+import com.riskguard.transaction.domain.OutboxEvent; import java.time.Instant; import java.util.List; import java.util.UUID; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param;
+public interface OutboxEventRepository extends JpaRepository<OutboxEvent,UUID> { @Query("select e from OutboxEvent e where e.status = 'PENDING' and e.nextAttemptAt <= :now order by e.createdAt asc") List<OutboxEvent> findPending(@Param("now") Instant now, org.springframework.data.domain.Pageable pageable); long countByStatus(String status); }

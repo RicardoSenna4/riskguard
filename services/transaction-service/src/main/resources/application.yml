@@ -14,13 +14,26 @@ spring:
     locations: classpath:db/migration
   jackson:
     time-zone: UTC
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      enable-idempotence: true
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:riskguard-transaction-service}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
 server:
   port: ${SERVER_PORT:8080}
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       probes:
@@ -32,6 +45,13 @@ management:
 app:
   idempotency:
     expiration-seconds: ${IDEMPOTENCY_EXPIRATION_SECONDS:86400}
+  outbox:
+    poll-ms: ${OUTBOX_POLL_MS:1000}
+  kafka:
+    transaction-created-topic: ${KAFKA_TRANSACTION_CREATED_TOPIC:transaction.created.v1}
+    fraud-result-topic: ${KAFKA_FRAUD_RESULT_TOPIC:fraud.analysis.completed.v1}
+    fraud-dlq-topic: ${KAFKA_FRAUD_DLQ_TOPIC:fraud.analysis.dlq.v1}
+    transaction-consumer-group: ${KAFKA_CONSUMER_GROUP:riskguard-transaction-service}
   security:
     jwt:
       secret: ${JWT_SECRET}

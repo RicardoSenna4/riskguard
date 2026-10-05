@@ -102,7 +102,11 @@ Os testes usam H2 isolado e não exigem containers. Healthchecks e volumes podem
 - [x] Gestão de transações: criação, consulta, filtros, paginação, status inicial, validações, cliente ativo, external ID único, optimistic locking e histórico.
 - [x] Idempotência HTTP persistida, replay da resposta, conflito por payload diferente, expiração e teste concorrente.
 - [x] Tratamento global de erros com códigos internos, correlation ID e sem stack trace exposta.
-- [ ] Transactional Outbox.
+- [x] Transactional Outbox com atomicidade, retry, tentativas, publicação e métricas de backlog.
+- [x] Kafka producer/consumer, eventos versionados, correlation ID, retry, DLQ e deduplicação.
+- [x] Fraud Service Python/FastAPI/Pydantic/SQLAlchemy com healthcheck, worker Kafka, retry e DLQ.
+- [x] Motor de fraude baseado em regras com score 0–1, motivos e decisões APPROVED/REVIEW/BLOCKED.
+- [x] Persistência de FraudAnalysis e atualização assíncrona de Transaction com score, decisão e modelo.
 - [ ] Publicação/consumo Kafka, Fraud Service, frontend, observabilidade completa e CI.
 
 ## Licença

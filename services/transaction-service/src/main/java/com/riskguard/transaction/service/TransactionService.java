@@ -14,10 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TransactionService {
-    private final TransactionRepository transactions; private final CustomerRepository customers; private final UserRepository users; private final TransactionStatusHistoryRepository history;
-    public TransactionService(TransactionRepository transactions, CustomerRepository customers, UserRepository users, TransactionStatusHistoryRepository history) { this.transactions = transactions; this.customers = customers; this.users = users; this.history = history; }
+    private final TransactionRepository transactions; private final CustomerRepository customers; private final UserRepository users; private final TransactionStatusHistoryRepository history; private final OutboxService outbox;
+    public TransactionService(TransactionRepository transactions, CustomerRepository customers, UserRepository users, TransactionStatusHistoryRepository history, OutboxService outbox) { this.transactions = transactions; this.customers = customers; this.users = users; this.history = history; this.outbox = outbox; }
     @Transactional
-    public TransactionDtos.Response create(UUID userId, TransactionDtos.Create request, boolean elevated) {
+    public TransactionDtos.Response create(UUID userId, TransactionDtos.Create request, boolean elevated) { return create(userId, request, elevated, UUID.randomUUID().toString()); }
+    @Transactional
+    public TransactionDtos.Response create(UUID userId, TransactionDtos.Create request, boolean elevated, String correlationId) {
         if (transactions.existsByExternalId(request.externalId().trim())) throw new DomainExceptions.Conflict("External ID is already registered");
         Customer customer = customers.findById(request.customerId()).orElseThrow(() -> new DomainExceptions.NotFound("Customer not found"));
         if (!elevated && !customer.getUser().getId().equals(userId)) throw new DomainExceptions.ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "You do not have access to this customer");
@@ -26,6 +28,7 @@ public class TransactionService {
         if (amount.signum() <= 0) throw new DomainExceptions.ApiException(org.springframework.http.HttpStatus.BAD_REQUEST, "Amount must be positive");
         Instant now = Instant.now(); Transaction transaction = transactions.save(new Transaction(UUID.randomUUID(), customer, request.externalId().trim(), amount, request.currency().trim().toUpperCase(), request.merchant().trim(), now));
         history.save(new TransactionStatusHistory(UUID.randomUUID(), transaction, TransactionStatus.PENDING, now, users.findById(userId).orElse(null)));
+        outbox.enqueueTransactionCreated(transaction, correlationId);
         return toResponse(transaction);
     }
     @Transactional(readOnly = true)
@@ -52,5 +55,5 @@ public class TransactionService {
     private Transaction find(UUID userId, UUID id, boolean elevated) { Transaction t = transactions.findById(id).orElseThrow(() -> new DomainExceptions.NotFound("Transaction not found")); if (!elevated && !t.getCustomer().getUser().getId().equals(userId)) throw new DomainExceptions.ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "You do not have access to this transaction"); return t; }
     private Page<Transaction> filteredForUser(UUID u, UUID c, Instant f, Instant t, TransactionStatus s, RiskLevel r, String m, Pageable p) { return transactions.search(u, c, f, t, s, r, m, p); }
     private Page<Transaction> filtered(UUID c, Instant f, Instant t, TransactionStatus s, RiskLevel r, String m, Pageable p) { return transactions.searchAll(c, f, t, s, r, m, p); }
-    private static TransactionDtos.Response toResponse(Transaction t) { return new TransactionDtos.Response(t.getId(), t.getCustomer().getId(), t.getExternalId(), t.getAmount(), t.getCurrency(), t.getMerchant(), t.getStatus(), t.getRisk(), t.getVersion(), t.getCreatedAt(), t.getUpdatedAt()); }
+    private static TransactionDtos.Response toResponse(Transaction t) { return new TransactionDtos.Response(t.getId(), t.getCustomer().getId(), t.getExternalId(), t.getAmount(), t.getCurrency(), t.getMerchant(), t.getStatus(), t.getRisk(), t.getRiskScore(), t.getRiskModelVersion(), t.getVersion(), t.getCreatedAt(), t.getUpdatedAt()); }
 }

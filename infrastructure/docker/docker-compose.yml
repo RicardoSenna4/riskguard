@@ -81,6 +81,19 @@ services:
       retries: 10
       start_period: 30s
 
+  fraud-service:
+    build:
+      context: ../../services/fraud-service
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DATABASE_URL: sqlite:////tmp/riskguard-fraud.db
+    ports:
+      - "${FRAUD_SERVICE_PORT:-8090}:8090"
+
 volumes:
   postgres_data:
   redis_data:
