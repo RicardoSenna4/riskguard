@@ -43,3 +43,8 @@ logs/
 
 # Python packaging
 *.egg-info/
+
+# ML artifacts and datasets
+data/
+services/fraud-service/ml/artifacts/
+*.joblib

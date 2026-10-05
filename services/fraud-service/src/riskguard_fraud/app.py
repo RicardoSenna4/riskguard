@@ -3,11 +3,11 @@ import os
 from fastapi import FastAPI
 
 from .db import FraudAnalysisRecord, create_session
-from .rules import RiskEngine
+from .models import build_risk_model
 from .schemas import FraudAnalysisResult, TransactionCreated
 
 app = FastAPI(title="RiskGuard Fraud Service", version="0.1.0")
-engine = RiskEngine()
+model = build_risk_model()
 SessionLocal = create_session(os.getenv("DATABASE_URL", "sqlite:///./riskguard-fraud.db"))
 
 @app.get("/health")
@@ -20,7 +20,7 @@ def analyze(event: TransactionCreated) -> FraudAnalysisResult:
         existing = session.query(FraudAnalysisRecord).filter_by(transaction_id=str(event.transactionId)).first()
         if existing:
             return FraudAnalysisResult(eventId=event.eventId, correlationId=event.correlationId, occurredAt=existing.created_at, transactionId=event.transactionId, riskScore=existing.risk_score, decision=existing.decision, reasons=existing.reasons, modelVersion=existing.model_version)
-        result = engine.analyze(event)
+        result = model.analyze(event)
         session.add(FraudAnalysisRecord(transaction_id=str(event.transactionId), event_id=str(result.eventId), risk_score=float(result.riskScore), decision=result.decision, reasons=result.reasons, model_version=result.modelVersion, correlation_id=result.correlationId))
         session.commit()
         return result

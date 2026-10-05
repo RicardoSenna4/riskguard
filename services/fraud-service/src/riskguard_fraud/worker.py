@@ -5,7 +5,7 @@ import os
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from pydantic import ValidationError
 
-from .app import SessionLocal, engine
+from .app import SessionLocal, model
 from .db import FraudAnalysisRecord, ProcessedEvent
 from .schemas import TransactionCreated
 
@@ -23,7 +23,7 @@ async def run() -> None:
                 try:
                     if session.get(ProcessedEvent, str(event.eventId)) or session.get(FraudAnalysisRecord, str(event.transactionId)):
                         await consumer.commit(); continue
-                    result = engine.analyze(event)
+                    result = model.analyze(event)
                     session.add(FraudAnalysisRecord(transaction_id=str(event.transactionId), event_id=str(result.eventId), risk_score=float(result.riskScore), decision=result.decision, reasons=result.reasons, model_version=result.modelVersion, correlation_id=result.correlationId))
                     session.add(ProcessedEvent(event_id=str(event.eventId)))
                     session.commit()
