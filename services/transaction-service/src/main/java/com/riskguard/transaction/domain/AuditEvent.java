@@ -13,8 +13,8 @@ public class AuditEvent {
     @Column(name="correlation_id", nullable=false, length=100) private String correlationId;
     @Column(name="resource_type", length=80) private String resourceType;
     @Column(name="resource_id") private UUID resourceId;
-    @Lob @Column(name="before_json") private String beforeJson;
-    @Lob @Column(name="after_json") private String afterJson;
+    @Column(name = "before_json", columnDefinition = "TEXT") private String beforeJson;
+    @Column(name = "after_json", columnDefinition = "TEXT") private String afterJson;
     @Column(name="created_at", nullable=false) private Instant createdAt;
     protected AuditEvent() {}
     public AuditEvent(UUID id,String action,UUID actorId,String correlationId,String resourceType,UUID resourceId,String beforeJson,String afterJson,Instant createdAt){this.id=id;this.action=action;this.actorId=actorId;this.correlationId=correlationId;this.resourceType=resourceType;this.resourceId=resourceId;this.beforeJson=beforeJson;this.afterJson=afterJson;this.createdAt=createdAt;}
