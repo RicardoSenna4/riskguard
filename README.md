@@ -1,116 +1,93 @@
 # RiskGuard
 
-Plataforma de portfólio para demonstrar engenharia de dados e software em um fluxo de detecção de fraude: transações persistidas, eventos assíncronos versionados e análise desacoplada. O escopo inicial implementa a fundação do monorepo, infraestrutura local e autenticação/autorização do Transaction Service.
-
-> **Estado:** fundação e serviço transacional inicial. Não processa pagamentos reais nem deve receber dados financeiros reais.
+RiskGuard é uma plataforma educacional de detecção de fraude para demonstrar uma arquitetura distribuída ponta a ponta: frontend React, API transacional Java, PostgreSQL, Redis, Kafka e serviço de fraude Python com regras e ML. **Não processa pagamentos nem dados financeiros reais.**
 
 ## Arquitetura
 
 ```text
-Cliente → Transaction Service (Java 21 / Spring Boot)
-                       ├── PostgreSQL (fonte de verdade, Flyway)
-                       ├── Redis (cache/uso temporário futuro)
-                       └── Kafka → Fraud Service (Python/FastAPI, etapa futura)
+React/Nginx → Transaction Service (Java 21/Spring Boot)
+                    ├─ PostgreSQL + Flyway (source of truth)
+                    ├─ Redis (cache/rate limit temporário)
+                    └─ Transactional Outbox → Kafka
+                                                └→ Fraud Service (Python/FastAPI)
+                                                    └→ decisão → Kafka → Transaction Service
 ```
 
-As decisões aprovadas estão em [`docs/decisions/`](docs/decisions/). PostgreSQL permanece como fonte de verdade; Kafka é a fronteira assíncrona; eventos são versionados e consumidores futuros devem ser idempotentes. O monorepo mantém limites explícitos entre componentes.
+O fluxo é assíncrono e idempotente. Transação e Outbox são gravados no mesmo commit; consumidores deduplicam eventos; `correlationId` atravessa REST, logs, Outbox, Kafka e respostas. As decisões automáticas podem ser `APPROVED`, `REVIEW` ou `BLOCKED`; reviews humanas preservam score, decisão automática, motivo e auditoria.
 
-## Estrutura
+## Stack
 
-```text
-services/transaction-service/   API de autenticação e base transacional (Java/Maven)
-services/fraud-service/         componente Python reservado para etapa futura
-frontend/                       frontend reservado para etapa futura
-infrastructure/docker/          Docker Compose local
-scripts/                        atalhos dev-up/dev-down
- docs/                           domínio, regras, eventos, segurança, testes e ADRs
-```
+- **Backend:** Java 21, Spring Boot, Spring Security, JWT, BCrypt, JPA, Flyway, Actuator, Micrometer.
+- **Fraude:** Python 3.12, FastAPI, Pydantic, SQLAlchemy, Alembic, Kafka, regras, Logistic Regression/Random Forest.
+- **Frontend:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Vitest, Playwright.
+- **Infra:** PostgreSQL, Redis, Kafka KRaft, Kafka UI, Prometheus, Grafana, Docker Compose.
 
-## Pré-requisitos
-
-- Java 21 e Maven 3.9+
-- Docker Engine e Docker Compose v2
-- Git
-
-## Inicialização local
+## Execução local
 
 ```bash
+cp .env.example .env
+# gere um segredo real para desenvolvimento local:
+openssl rand -base64 32
+# coloque o valor em JWT_SECRET no .env
 ./scripts/dev-up.sh
+./scripts/seed-demo.sh
+./scripts/portfolio-demo.sh
 ```
 
-Na primeira execução, o script copia `.env.example` para `.env`; revise os valores de desenvolvimento antes de expor serviços na rede. O Compose inicia PostgreSQL, Redis, Kafka (KRaft) e Kafka UI com healthchecks e volumes persistentes. Os endereços locais padrão são PostgreSQL `localhost:5432`, Redis `localhost:6379`, Kafka `localhost:9092` e Kafka UI `http://localhost:8081`.
+Interfaces: frontend `http://localhost:5173`, API `http://localhost:8080`, Fraud Service `http://localhost:8090`, Kafka UI `http://localhost:8081`, Prometheus `http://localhost:9090`, Grafana `http://localhost:3000` e Swagger `http://localhost:8080/swagger-ui.html`.
 
-Para encerrar os containers **sem apagar dados**:
+Para desligar sem remover volumes:
 
 ```bash
 ./scripts/dev-down.sh
 ```
 
-As migrações Flyway são executadas quando o Transaction Service inicia. Para executar a API localmente, carregue `.env` no shell (o Docker Compose não exporta variáveis para o processo local) e inicie:
+Seeds locais: `user@riskguard.local`, `analyst@riskguard.local` e `admin@riskguard.local`, todos com senha `correct-horse-battery`. Nunca use essas credenciais fora do ambiente local.
+
+## API e eventos
+
+A documentação OpenAPI fica em [`docs/api/openapi.md`](docs/api/openapi.md). Os endpoints cobrem autenticação, clientes, transações paginadas/filtros, detalhes, histórico, dashboard e reviews. O catálogo de eventos está em [`docs/events/event-catalog.md`](docs/events/event-catalog.md), com `transaction.created.v1`, `fraud.analysis.completed.v1` e DLQ.
+
+## Machine Learning
+
+O Fraud Service inicia com regras por padrão (`RISK_ENGINE=rules`). O pipeline ML seleciona dataset público, documenta limitações, prepara features, treina Logistic Regression/Random Forest e gera métricas. Artefatos grandes e datasets não são versionados; consulte [`services/fraud-service/ml/README.md`](services/fraud-service/ml/README.md).
+
+## Segurança e observabilidade
+
+JWT curto e refresh rotativo usam BCrypt e hash SHA-256; RBAC e ownership protegem endpoints; rate limiting usa Redis com fallback; CORS aceita origens explícitas; respostas não expõem stack trace. Consulte [`docs/security/threat-model.md`](docs/security/threat-model.md) e [`docs/security/release-checklist.md`](docs/security/release-checklist.md).
+
+Actuator, Prometheus e Grafana expõem health, latência, throughput, erros, fraude e backlog do Outbox. Kafka UI permite inspeção operacional e troubleshooting.
+
+## Testes e CI
 
 ```bash
-set -a; . ./.env; set +a
-cd services/transaction-service
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd services/transaction-service && mvn verify
+cd ../fraud-service && uv sync --extra dev && uv run ruff check src tests ml && uv run mypy src && uv run pytest
+cd ../../frontend && npm ci && npm run lint && npm test -- --run && npm run build
 ```
 
-A API fica em `http://localhost:8080/api/v1`; verificação de saúde em `/actuator/health`.
+O workflow [`CI`](.github/workflows/ci.yml) executa Java, Python, frontend, validação/build Docker, Trivy e Dependency Review. O teste PostgreSQL via Testcontainers pode ser ativado com `RUN_CONTAINERS=true`.
 
-## Autenticação e autorização
-
-- `POST /api/v1/auth/register`: cria usuário com papel `USER`.
-- `POST /api/v1/auth/login`: valida senha com BCrypt, retorna JWT de acesso e refresh token opaco.
-- `POST /api/v1/auth/refresh`: revoga o refresh token apresentado e emite novo par (rotação de uso único).
-- `POST /api/v1/auth/logout`: exige JWT válido e revoga o refresh token do usuário autenticado.
-- `GET /api/v1/users/{userId}/profile`: demonstra ownership; o próprio usuário ou `ADMIN` pode consultar.
-- `GET /api/v1/analyst/ping` e `/api/v1/admin/ping`: demonstram autorização por papel.
-
-Access token dura 900 s e refresh token 604800 s por padrão; ambos são configuráveis. Novos cadastros sempre recebem `USER`; atribuição de `ANALYST`/`ADMIN` é deliberadamente administrativa e não está exposta por endpoint público. Falta/invalidade de autenticação retorna 401; identidade autenticada sem permissão retorna 403.
-
-Consulte [`docs/api/authentication.md`](docs/api/authentication.md) e [`docs/api/customers-and-transactions.md`](docs/api/customers-and-transactions.md) para contratos e exemplos. O refresh token é devolvido no corpo da resposta neste bootstrap para facilitar o teste; em produção, prefira cookie `HttpOnly`, `Secure`, `SameSite` com política de CSRF apropriada, TLS, rotação de chaves e gestão formal de segredos.
-
-## Configuração
-
-As variáveis documentadas estão em `.env.example`. Nunca versione `.env`, credenciais, tokens ou dados reais. Gere um `JWT_SECRET` Base64 aleatório de pelo menos 256 bits, por exemplo `openssl rand -base64 32`. Os valores de `.env.example` são apenas para desenvolvimento local.
-
-## Verificações
+Smoke tests:
 
 ```bash
-cd services/transaction-service
-mvn test
-mvn verify
+./scripts/resilience-smoke.sh
+./scripts/performance-smoke.sh
 ```
 
-Os testes usam H2 isolado e não exigem containers. Healthchecks e volumes podem ser inspecionados com `docker compose -f infrastructure/docker/docker-compose.yml ps`.
+## Documentação e diagramas
 
-## Documentação
+- [`docs/architecture/architecture.md`](docs/architecture/architecture.md)
+- [`docs/domain/domain-model-final.md`](docs/domain/domain-model-final.md)
+- [`docs/diagrams/`](docs/diagrams/)
+- [`docs/demo/portfolio-demo.md`](docs/demo/portfolio-demo.md)
+- [`docs/release-v1.md`](docs/release-v1.md)
+- [`docs/testing/final-validation.md`](docs/testing/final-validation.md)
+- [`docs/decisions/`](docs/decisions/)
 
-- [`AGENTS.md`](AGENTS.md): regras de contribuição e segurança.
-- [`docs/domain/domain-model.md`](docs/domain/domain-model.md): entidades e limites.
-- [`docs/domain/business-rules.md`](docs/domain/business-rules.md): regras de negócio atuais.
-- [`docs/events/event-catalog.md`](docs/events/event-catalog.md): eventos e envelope versionado.
-- [`docs/decisions/`](docs/decisions/): ADRs aceitos.
+## Limitações
 
-## Roadmap resumido
-
-- [x] Monorepo, documentação de domínio/regras/eventos e ADRs.
-- [x] Infraestrutura local PostgreSQL, Redis, Kafka e Kafka UI.
-- [x] Transaction Service: Java 21, Spring Boot, Maven, Actuator, PostgreSQL/Flyway.
-- [x] Cadastro, login, hash BCrypt, JWT de acesso, refresh rotativo e logout.
-- [x] Papéis USER/ANALYST/ADMIN, endpoints protegidos, ownership e respostas 401/403.
-- [x] Gestão de clientes: CRUD, ativação/inativação, documento único, ownership, validação e paginação.
-- [x] Gestão de transações: criação, consulta, filtros, paginação, status inicial, validações, cliente ativo, external ID único, optimistic locking e histórico.
-- [x] Idempotência HTTP persistida, replay da resposta, conflito por payload diferente, expiração e teste concorrente.
-- [x] Tratamento global de erros com códigos internos, correlation ID e sem stack trace exposta.
-- [x] Transactional Outbox com atomicidade, retry, tentativas, publicação e métricas de backlog.
-- [x] Kafka producer/consumer, eventos versionados, correlation ID, retry, DLQ e deduplicação.
-- [x] Fraud Service Python/FastAPI/Pydantic/SQLAlchemy com healthcheck, worker Kafka, retry e DLQ.
-- [x] Motor de fraude baseado em regras com score 0–1, motivos e decisões APPROVED/REVIEW/BLOCKED.
-- [x] Persistência de FraudAnalysis e atualização assíncrona de Transaction com score, decisão e modelo.
-- [x] Publicação/consumo Kafka, Fraud Service, frontend e observabilidade Prometheus/Grafana.
-- [x] Segurança com JWT/refresh rotativo, BCrypt, RBAC, ownership, CORS explícito, headers, rate limiting e threat model STRIDE.
-- [x] Testes Java unitários/integração, Testcontainers opcional, testes Python, Vitest/Testing Library e smoke E2E Playwright.
-- [x] Smoke tests de resiliência/performance, índices de consulta e workflow CI com build, testes, lint, Docker e dependency scan.
+O projeto é uma demonstração de engenharia. Kafka local usa configuração de desenvolvimento; produção exige TLS/ACL, secret manager, tracing, backups, alta disponibilidade, SLOs, validação do modelo, monitoramento de drift e revisão de compliance. Nenhuma decisão deve autorizar dinheiro real sem controles adicionais.
 
 ## Licença
 
