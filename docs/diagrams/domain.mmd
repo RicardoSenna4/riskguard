@@ -1,0 +1,15 @@
+erDiagram
+  USER_ACCOUNT ||--o{ CUSTOMER : owns
+  CUSTOMER ||--o{ TRANSACTION : receives
+  TRANSACTION ||--o{ STATUS_HISTORY : has
+  TRANSACTION ||--o| FRAUD_ANALYSIS : receives
+  TRANSACTION ||--o{ FRAUD_REVIEW : has
+  USER_ACCOUNT ||--o{ AUDIT_EVENT : performs
+  USER_ACCOUNT ||--o{ REFRESH_TOKEN : owns
+  USER_ACCOUNT ||--o{ IDEMPOTENCY_KEY : creates
+  TRANSACTION ||--o{ OUTBOX_EVENT : emits
+  USER_ACCOUNT { UUID id string email string role }
+  CUSTOMER { UUID id UUID user_id string document boolean active }
+  TRANSACTION { UUID id decimal amount string status string risk_score }
+  FRAUD_ANALYSIS { UUID id decimal risk_score string decision string model_version }
+  FRAUD_REVIEW { UUID id string decision string reason decimal original_score }

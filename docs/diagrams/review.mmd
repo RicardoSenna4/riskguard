@@ -1,0 +1,13 @@
+sequenceDiagram
+  participant Analyst
+  participant UI as React
+  participant API as Transaction Service
+  participant DB as PostgreSQL
+  Analyst->>UI: abre fila REVIEW
+  UI->>API: GET transações REVIEW
+  UI->>API: GET detalhes + histórico
+  Analyst->>UI: escolhe APPROVE/BLOCK + motivo
+  UI->>API: POST /analyst/transactions/{id}/reviews
+  API->>DB: FraudReview + AuditEvent
+  API->>DB: status final + status history
+  API-->>UI: decisão registrada + correlation ID

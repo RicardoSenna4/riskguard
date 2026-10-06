@@ -1,0 +1,22 @@
+sequenceDiagram
+  actor User
+  participant UI as React
+  participant API as Transaction Service
+  participant DB as PostgreSQL
+  participant K as Kafka
+  participant Fraud as Fraud Service
+  User->>UI: cria transação
+  UI->>API: POST + Idempotency-Key
+  API->>DB: transaction + outbox no mesmo commit
+  API-->>UI: 201 PENDING
+  API->>K: transaction.created.v1
+  K->>Fraud: entrega evento
+  Fraud->>Fraud: valida, deduplica e analisa
+  Fraud->>K: fraud.analysis.completed.v1
+  K->>API: resultado + correlation ID
+  API->>DB: análise + status + histórico
+  UI->>API: consulta detalhes
+  API-->>UI: score, reasons e timeline
+  User->>UI: decide review
+  UI->>API: POST review
+  API->>DB: review + auditoria + status final

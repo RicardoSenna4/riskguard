@@ -1,0 +1,15 @@
+flowchart LR
+  U[Usuário] --> F[React + Nginx]
+  F --> T[Transaction Service\nJava/Spring]
+  T --> P[(PostgreSQL)]
+  T --> R[(Redis)]
+  T --> O[Outbox Publisher]
+  O --> K[(Kafka)]
+  K --> S[Fraud Service\nPython/FastAPI]
+  S --> A[(Fraud DB)]
+  S --> K
+  K --> T
+  P -. métricas .-> PR[Prometheus]
+  T -. métricas .-> PR
+  S -. métricas .-> PR
+  PR --> G[Grafana]

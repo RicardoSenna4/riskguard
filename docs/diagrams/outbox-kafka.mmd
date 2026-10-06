@@ -1,0 +1,13 @@
+flowchart TD
+  C[Commit Transaction + Outbox] --> P{Publisher}
+  P -->|ack| S[PUBLISHED + publishedAt]
+  P -->|erro| R[attempts + nextAttemptAt + lastError]
+  R --> P
+  K[Kafka Consumer] --> V{schema válido?}
+  V -->|sim| D{duplicado?}
+  V -->|não| DLQ[DLQ]
+  D -->|sim| ACK[ack sem reaplicar]
+  D -->|não| H{processou?}
+  H -->|sim| ACK
+  H -->|falha temporária| RETRY[retry limitado]
+  H -->|falha permanente| DLQ

@@ -1,0 +1,14 @@
+sequenceDiagram
+  participant O as Outbox
+  participant K as Kafka
+  participant F as Fraud Service
+  participant FD as Fraud DB
+  participant T as Transaction Service
+  O->>K: transaction.created.v1
+  K->>F: consume
+  F->>F: schema + versão + deduplicação
+  F->>FD: FraudAnalysis
+  F->>K: fraud.analysis.completed.v1
+  K->>T: consume com retry
+  T->>T: APPROVED / REVIEW / BLOCKED
+  T->>T: persiste no PostgreSQL transacional
