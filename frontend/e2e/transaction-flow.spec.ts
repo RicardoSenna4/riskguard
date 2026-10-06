@@ -1,0 +1,3 @@
+import {test,expect} from '@playwright/test';
+const email=process.env.E2E_USER_EMAIL; const password=process.env.E2E_USER_PASSWORD;
+test('principal: login e monitoramento de transação',async({page})=>{test.skip(!email||!password,'configure E2E_USER_EMAIL/E2E_USER_PASSWORD');await page.goto('/login');await page.getByLabel('E-mail').fill(email!);await page.getByLabel('Senha').fill(password!);await page.getByRole('button',{name:'Acessar painel'}).click();await expect(page).toHaveURL(/\/$/);await expect(page.getByText('Controle de risco')).toBeVisible();await page.getByRole('link',{name:'Transações'}).click();await expect(page.getByRole('heading',{name:'Transações'})).toBeVisible();});
