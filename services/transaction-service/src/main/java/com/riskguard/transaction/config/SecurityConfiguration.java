@@ -38,7 +38,7 @@ public class SecurityConfiguration {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(c -> c.configurationSource(cors))
-            .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'")))
+            .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'")).frameOptions(frame -> frame.deny()).referrerPolicy(referrer -> referrer.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)).httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000)))
             .addFilterBefore(correlationIdFilter, BearerTokenAuthenticationFilter.class)
             .addFilterAfter(rateLimitFilter, CorrelationIdFilter.class)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
