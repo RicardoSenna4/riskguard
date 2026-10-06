@@ -107,7 +107,10 @@ Os testes usam H2 isolado e não exigem containers. Healthchecks e volumes podem
 - [x] Fraud Service Python/FastAPI/Pydantic/SQLAlchemy com healthcheck, worker Kafka, retry e DLQ.
 - [x] Motor de fraude baseado em regras com score 0–1, motivos e decisões APPROVED/REVIEW/BLOCKED.
 - [x] Persistência de FraudAnalysis e atualização assíncrona de Transaction com score, decisão e modelo.
-- [ ] Publicação/consumo Kafka, Fraud Service, frontend, observabilidade completa e CI.
+- [x] Publicação/consumo Kafka, Fraud Service, frontend e observabilidade Prometheus/Grafana.
+- [x] Segurança com JWT/refresh rotativo, BCrypt, RBAC, ownership, CORS explícito, headers, rate limiting e threat model STRIDE.
+- [x] Testes Java unitários/integração, Testcontainers opcional, testes Python, Vitest/Testing Library e smoke E2E Playwright.
+- [x] Smoke tests de resiliência/performance, índices de consulta e workflow CI com build, testes, lint, Docker e dependency scan.
 
 ## Licença
 
