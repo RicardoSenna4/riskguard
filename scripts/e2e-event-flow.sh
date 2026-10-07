@@ -13,8 +13,13 @@ fraud_sql() { compose exec -T postgres sh -c 'psql -tAq -U "$POSTGRES_USER" -d "
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
   if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-    local logs; logs="$(compose logs --no-color --tail=15 transaction-service fraud-worker 2>&1 | cut -c1-300)"
-    printf '::error title=e2e::%s%%0A%s\n' "$*" "$(sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g' <<<"$logs")"
+    annotate() { printf '::error title=%s::%s\n' "$1" "$(head -c 3500 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"; }
+    printf '%s' "$*" | annotate e2e
+    compose ps -a 2>&1 | annotate "compose ps"
+    # Collapse repeated lines so a retry loop doesn't hide what came before/after it.
+    compose logs --no-color --no-log-prefix fraud-worker 2>&1 | sed -E 's/"timestamp": "[^"]*", //' | cut -c1-220 | uniq -c | tail -25 | annotate "fraud-worker logs"
+    compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:29092 --describe --all-groups 2>&1 | annotate "consumer groups"
+    compose logs --no-color --no-log-prefix transaction-service 2>&1 | grep -iE 'outbox|error|exception|warn' | cut -c1-260 | tail -15 | annotate "transaction-service logs"
   fi
   compose logs --tail=80 transaction-service fraud-service fraud-worker >&2 || true
   exit 1
