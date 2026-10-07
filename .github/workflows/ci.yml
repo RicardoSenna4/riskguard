@@ -15,7 +15,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '21', cache: maven}
+      # RUN_CONTAINERS enables the Testcontainers suites (PostgreSQL, Kafka, Redis) on the runner's Docker.
       - run: mvn -B verify
+        env: {RUN_CONTAINERS: 'true'}
   python:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: services/fraud-service}}
