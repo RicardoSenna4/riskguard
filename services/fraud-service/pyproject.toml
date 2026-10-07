@@ -3,7 +3,7 @@ name = "riskguard-fraud-service"
 version = "0.1.0"
 description = "Rule-based fraud analysis service for RiskGuard"
 requires-python = ">=3.11"
-dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1", "pydantic>=2.8,<3", "sqlalchemy>=2.0,<3", "alembic>=1.13,<2", "aiokafka>=0.10,<1", "prometheus-client>=0.21,<1"]
+dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1", "pydantic>=2.8,<3", "sqlalchemy>=2.0,<3", "psycopg[binary]>=3.2,<4", "alembic>=1.13,<2", "aiokafka>=0.10,<1", "prometheus-client>=0.21,<1"]
 [project.optional-dependencies]
 dev = ["pytest>=8,<9", "httpx>=0.27,<1", "ruff>=0.6,<1", "mypy>=1.11,<2"]
 ml = ["pandas>=2.2,<3", "scikit-learn>=1.5,<2", "joblib>=1.4,<2"]

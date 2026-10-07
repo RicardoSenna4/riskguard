@@ -1,5 +1,6 @@
 from logging.config import fileConfig
 from pathlib import Path
+import os
 import sys
 from sqlalchemy import engine_from_config, pool
 from alembic import context
@@ -7,7 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from riskguard_fraud.db import Base
 
 config = context.config
-if config.config_file_name: fileConfig(config.config_file_name)
+if config.config_file_name: fileConfig(config.config_file_name, disable_existing_loggers=False)
+# DATABASE_URL (same variable the service reads) overrides the alembic.ini default.
+if os.getenv("DATABASE_URL"): config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"].replace("%", "%%"))
 target_metadata = Base.metadata
 
 def run_migrations_offline():

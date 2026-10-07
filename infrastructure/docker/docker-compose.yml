@@ -7,10 +7,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-riskguard}
       POSTGRES_USER: ${POSTGRES_USER:-riskguard}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      FRAUD_DB_NAME: ${FRAUD_DB_NAME:-riskguard_fraud}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ../database/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-riskguard} -d ${POSTGRES_DB:-riskguard}"]
       interval: 10s
@@ -84,13 +86,16 @@ services:
   fraud-service:
     build:
       context: ../../services/fraud-service
+    image: riskguard-fraud-service:local
     restart: unless-stopped
     depends_on:
+      postgres:
+        condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      DATABASE_URL: sqlite:////tmp/riskguard-fraud.db
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-riskguard}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${FRAUD_DB_NAME:-riskguard_fraud}
     ports:
       - "${FRAUD_SERVICE_PORT:-8090}:8090"
     healthcheck:
