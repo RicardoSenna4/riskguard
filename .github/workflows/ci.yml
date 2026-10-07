@@ -16,8 +16,17 @@ jobs:
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: '21', cache: maven}
       # RUN_CONTAINERS enables the Testcontainers suites (PostgreSQL, Kafka, Redis) on the runner's Docker.
-      - run: mvn -B verify
+      - run: mvn -B verify | tee mvn.log
+        shell: bash
         env: {RUN_CONTAINERS: 'true'}
+      - name: Annotate failed tests
+        if: failure()
+        run: |
+          for f in target/surefire-reports/*.txt; do
+            grep -q -E 'FAILURE|ERROR' "$f" || continue
+            printf '::error title=%s::%s\n' "$(basename "$f" .txt)" "$(grep -A12 -E '<<< (FAILURE|ERROR)' "$f" | head -c 3000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
+          done
+          printf '::error title=maven::%s\n' "$(grep -E '^\[ERROR\]' mvn.log | head -40 | head -c 3500 | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
   python:
     runs-on: ubuntu-latest
     defaults: {run: {working-directory: services/fraud-service}}
@@ -66,6 +75,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with: {scan-type: fs, scan-ref: ., severity: 'CRITICAL,HIGH', ignore-unfixed: true, exit-code: '1'}
+        with: {scan-type: fs, scan-ref: ., severity: 'CRITICAL,HIGH', ignore-unfixed: true, format: json, output: trivy.json, exit-code: '0'}
+      - name: Fail on CRITICAL/HIGH findings
+        run: |
+          jq -r '.Results[]? | .Target as $t | .Vulnerabilities[]? | "::error title=\(.Severity) \(.VulnerabilityID)::\($t): \(.PkgName) \(.InstalledVersion) -> fixed in \(.FixedVersion)"' trivy.json | sort -u | tee findings.txt
+          test ! -s findings.txt
       - uses: actions/dependency-review-action@v4
         if: github.event_name == 'pull_request'
