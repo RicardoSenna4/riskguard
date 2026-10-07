@@ -86,8 +86,14 @@ jobs:
       - name: Compose diagnostics
         if: failure()
         run: |
-          docker compose --env-file .env -f infrastructure/docker/docker-compose.yml ps -a
-          docker compose --env-file .env -f infrastructure/docker/docker-compose.yml logs --tail=200
+          compose() { docker compose --env-file .env -f infrastructure/docker/docker-compose.yml "$@"; }
+          compose ps -a
+          compose ps -a --format '{{.Service}} {{.State}} {{.Health}}' | while read -r service state health; do
+            [[ "$state" == running && "$health" != unhealthy && "$health" != starting ]] && continue
+            printf '::error title=%s %s %s::%s\n' "$service" "$state" "$health" \
+              "$(compose logs --no-color --tail=25 "$service" | cut -c1-300 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
+          done
+          compose logs --tail=200
   dependency-scan:
     runs-on: ubuntu-latest
     steps:
