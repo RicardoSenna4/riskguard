@@ -28,10 +28,11 @@ async def run() -> None:
                     session.add(ProcessedEvent(event_id=str(event.eventId)))
                     session.commit()
                 finally: session.close()
-                await producer.send_and_wait("fraud.analysis.completed.v1", result.transactionId.bytes, result.model_dump_json().encode())
+                # Keyword arguments: send_and_wait(topic, value, key) - the key is the transaction id as text, like the Java outbox.
+                await producer.send_and_wait("fraud.analysis.completed.v1", value=result.model_dump_json().encode(), key=str(result.transactionId).encode())
                 await consumer.commit()
             except (ValidationError, ValueError, KeyError) as error:
-                await producer.send_and_wait("fraud.analysis.dlq.v1", message.key, json.dumps({"error": str(error), "payload": message.value.decode()}).encode())
+                await producer.send_and_wait("fraud.analysis.dlq.v1", value=json.dumps({"error": str(error), "payload": message.value.decode()}).encode(), key=message.key)
                 await consumer.commit()
             except (OSError, RuntimeError):
                 await asyncio.sleep(1)
