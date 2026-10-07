@@ -19,7 +19,9 @@ fail() {
     # Collapse repeated lines so a retry loop doesn't hide what came before/after it.
     compose logs --no-color --no-log-prefix fraud-worker 2>&1 | sed -E 's/"timestamp": "[^"]*", //' | cut -c1-220 | uniq -c | tail -25 | annotate "fraud-worker logs"
     compose exec -T kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:29092 --describe --all-groups 2>&1 | annotate "consumer groups"
-    compose logs --no-color --no-log-prefix transaction-service 2>&1 | grep -iE 'outbox|error|exception|warn' | cut -c1-260 | tail -15 | annotate "transaction-service logs"
+    compose logs --no-color --no-log-prefix transaction-service 2>&1 | grep -E '"level":"(WARN|ERROR)"|Caused by' | cut -c1-400 | tail -15 | annotate "transaction-service logs"
+    compose exec -T kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:29092 --topic fraud.analysis.dlq.v1 \
+      --from-beginning --timeout-ms 5000 --max-messages 3 2>/dev/null | cut -c1-600 | annotate "fraud DLQ"
   fi
   compose logs --tail=80 transaction-service fraud-service fraud-worker >&2 || true
   exit 1
