@@ -12,7 +12,7 @@ public class FraudAnalysis {
     @OneToOne(fetch=FetchType.LAZY, optional=false) @JoinColumn(name="transaction_id", nullable=false) private Transaction transaction;
     @Column(name="risk_score", nullable=false, precision=5, scale=4) private BigDecimal riskScore;
     @Enumerated(EnumType.STRING) @Column(nullable=false, length=20) private FraudDecision decision;
-    @Lob @Column(nullable=false) private String reasons;
+    @Column(nullable=false, columnDefinition="text") private String reasons;
     @Column(name="model_version", nullable=false, length=80) private String modelVersion;
     @Column(name="event_id", nullable=false, unique=true) private UUID eventId;
     @Column(name="correlation_id", nullable=false, length=100) private String correlationId;

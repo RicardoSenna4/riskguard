@@ -12,7 +12,7 @@ public class IdempotencyKey {
     @Column(name = "key_value", nullable = false, length = 255) private String keyValue;
     @Column(name = "request_hash", nullable = false, length = 64) private String requestHash;
     @Column(name = "response_status", nullable = false) private int responseStatus;
-    @Lob @Column(name = "response_body", nullable = false) private String responseBody;
+    @Column(name = "response_body", nullable = false, columnDefinition = "text") private String responseBody;
     @Column(name = "created_at", nullable = false) private Instant createdAt;
     @Column(name = "expires_at", nullable = false) private Instant expiresAt;
     protected IdempotencyKey() {}

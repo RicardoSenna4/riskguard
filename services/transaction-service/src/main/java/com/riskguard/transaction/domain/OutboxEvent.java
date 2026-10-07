@@ -12,7 +12,7 @@ public class OutboxEvent {
     @Column(name="aggregate_id", nullable=false) private UUID aggregateId;
     @Column(name="correlation_id", nullable=false, length=100) private String correlationId;
     @Column(nullable=false, length=20) private String status;
-    @Lob @Column(nullable=false) private String payload;
+    @Column(nullable=false, columnDefinition="text") private String payload;
     @Column(nullable=false) private int attempts;
     @Column(name="next_attempt_at", nullable=false) private Instant nextAttemptAt;
     @Column(name="published_at") private Instant publishedAt;
