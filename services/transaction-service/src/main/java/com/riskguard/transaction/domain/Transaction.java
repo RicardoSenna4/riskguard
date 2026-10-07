@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "transactions")
@@ -12,7 +14,7 @@ public class Transaction {
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "customer_id", nullable = false) private Customer customer;
     @Column(name = "external_id", nullable = false, unique = true, length = 100) private String externalId;
     @Column(nullable = false, precision = 19, scale = 4) private BigDecimal amount;
-    @Column(nullable = false, length = 3) private String currency;
+    @JdbcTypeCode(SqlTypes.CHAR) @Column(nullable = false, length = 3) private String currency;
     @Column(nullable = false, length = 160) private String merchant;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private TransactionStatus status;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20) private RiskLevel risk;
