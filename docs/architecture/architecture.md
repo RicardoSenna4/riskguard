@@ -4,7 +4,7 @@ O RiskGuard é um monorepo com três componentes: frontend React servido por Ngi
 
 ## Fluxos
 
-A criação de transação grava `transactions` e `outbox_events` no mesmo commit. O publisher publica `transaction.created.v1`; o Fraud Service valida, deduplica, aplica regras ou ML, persiste `FraudAnalysis` e publica `fraud.analysis.completed.v1`. O Transaction Service atualiza score/status/histórico. Falhas permanentes seguem para DLQ.
+A criação de transação grava `transactions` e `outbox_events` no mesmo commit. O publisher publica `transaction.created.v1`; o Fraud Service (consumidor `fraud-worker`) valida, deduplica, aplica regras ou ML, persiste `FraudAnalysis` no próprio banco `riskguard_fraud` ([ADR-007](../decisions/ADR-007-fraud-service-postgresql.md)) e publica `fraud.analysis.completed.v1`. O Transaction Service atualiza score/status/histórico. Falhas permanentes seguem para DLQ.
 
 O frontend usa o mesmo host do Nginx; `/api/` é encaminhado ao Transaction Service. O correlation ID nasce no REST quando ausente e acompanha MDC, Outbox, headers Kafka, eventos, logs e respostas HTTP.
 

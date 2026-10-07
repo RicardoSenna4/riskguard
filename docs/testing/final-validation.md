@@ -2,7 +2,7 @@
 
 ## Qualidade
 
-Java usa `mvn test`/`mvn verify`; Python usa Ruff, MyPy e Pytest; frontend usa ESLint, Vitest e build TypeScript/Vite. Testcontainers oferece uma verificação PostgreSQL opcional com `RUN_CONTAINERS=true`.
+Java usa `mvn test`/`mvn verify`; Python usa Ruff, MyPy e Pytest; frontend usa ESLint, Vitest e build TypeScript/Vite. Com `RUN_CONTAINERS=true` (sempre ativo no CI), `EventFlowContainersTest` sobe PostgreSQL, Kafka e Redis via Testcontainers e valida o fluxo Outbox → Kafka → consumidor com Flyway e validação de schema reais. `scripts/e2e-event-flow.sh` valida o fluxo entre os dois serviços na stack Compose.
 
 ## Observabilidade
 
@@ -10,4 +10,4 @@ Consulte `/actuator/health`, `/actuator/prometheus` e `/metrics`. Grafana consol
 
 ## Troubleshooting
 
-Se a API não inicia, verifique `JWT_SECRET`, health do PostgreSQL/Redis/Kafka e logs do serviço. Se o dashboard estiver vazio, execute `./scripts/seed-demo.sh`. Se houver Outbox pendente, verifique Kafka e o contador de tentativas. Se a análise não avançar, consulte `fraud.analysis.dlq.v1` e o correlation ID. Se o frontend retornar 502, aguarde o healthcheck do Transaction Service e confirme o proxy Nginx.
+Se a API não inicia, verifique `JWT_SECRET`, health do PostgreSQL/Redis/Kafka e logs do serviço. Se o dashboard estiver vazio, execute `./scripts/seed-demo.sh`. Se houver Outbox pendente, verifique Kafka e o contador de tentativas. Se a análise não avançar, confira se o `fraud-worker` está rodando, consulte `fraud.analysis.dlq.v1` e procure no log do Transaction Service por `Sending fraud result to DLQ`, que registra a causa. Se o frontend retornar 502, aguarde o healthcheck do Transaction Service e confirme o proxy Nginx.

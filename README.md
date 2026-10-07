@@ -66,7 +66,20 @@ cd ../fraud-service && uv sync --extra dev && uv run ruff check src tests ml && 
 cd ../../frontend && npm ci && npm run lint && npm test -- --run && npm run build
 ```
 
-O workflow [`CI`](.github/workflows/ci.yml) executa Java, Python, frontend, validação/build Docker, Trivy e Dependency Review. O teste PostgreSQL via Testcontainers pode ser ativado com `RUN_CONTAINERS=true`.
+O workflow [`CI`](.github/workflows/ci.yml) executa:
+
+| Job | O que valida |
+| --- | --- |
+| `java` | `mvn verify`, incluindo Testcontainers (PostgreSQL, Kafka e Redis reais): `POST /transactions` → PostgreSQL → Outbox → `transaction.created.v1` → `fraud.analysis.completed.v1` → status atualizado |
+| `python` | Ruff, MyPy, Pytest; migrações Alembic contra PostgreSQL |
+| `frontend` | ESLint, Vitest, build |
+| `infra` | `docker compose config` e build das três imagens (transaction, fraud, frontend) |
+| `e2e` | Stack Compose completa com [`scripts/e2e-event-flow.sh`](scripts/e2e-event-flow.sh): fluxo entre os dois serviços e persistência das análises após recriar os containers |
+| `dependency-scan` | Trivy (CRITICAL/HIGH) e Dependency Review em PRs |
+
+O workflow [`CodeQL`](.github/workflows/codeql.yml) faz análise estática de Java, Python e TypeScript. Falhas de teste, achados do Trivy e serviços não saudáveis do E2E aparecem como anotações no resumo do run.
+
+Localmente, os testes Testcontainers rodam com `RUN_CONTAINERS=true mvn verify` e o E2E com `./scripts/dev-up.sh && ./scripts/e2e-event-flow.sh`.
 
 Smoke tests:
 

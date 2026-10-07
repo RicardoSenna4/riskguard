@@ -8,7 +8,9 @@ A V1 demonstra o fluxo ponta a ponta: usuário → React/Nginx → Transaction S
 
 - `./scripts/dev-up.sh` sobe a infraestrutura local após `.env` válido.
 - `./scripts/seed-demo.sh` é idempotente e povoa a demonstração.
-- `mvn verify`, Ruff/MyPy/Pytest, ESLint/Vitest/build frontend passam.
+- `mvn verify` (com Testcontainers), Ruff/MyPy/Pytest, ESLint/Vitest/build frontend passam.
+- As três imagens Docker são construídas no CI e o E2E (`scripts/e2e-event-flow.sh`) confirma o fluxo de eventos entre os serviços.
+- Trivy não reporta CRITICAL/HIGH e o CodeQL roda a cada push.
 - Swagger, health, métricas, Kafka UI e Grafana estão acessíveis.
 - Duplicidade de HTTP/eventos não cria efeitos duplicados.
 - Falhas de Kafka/Fraud Service preservam o Outbox e encaminham falhas permanentes à DLQ.
@@ -20,4 +22,4 @@ A V1 não processa dinheiro real, não oferece PCI scope, MFA, alta disponibilid
 
 ## Próximos passos
 
-Configurar secret manager e TLS, adicionar SAST/DAST contínuo, Testcontainers completo para PostgreSQL/Redis/Kafka, executar carga representativa, integrar tracing OpenTelemetry, revisar acessibilidade visual e publicar imagens versionadas em registry.
+Configurar secret manager e TLS, adicionar DAST contínuo, executar carga representativa, integrar tracing OpenTelemetry, revisar acessibilidade visual e publicar imagens versionadas em registry.
