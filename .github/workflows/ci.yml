@@ -24,7 +24,8 @@ jobs:
         run: |
           for f in target/surefire-reports/*.txt; do
             grep -q -E 'FAILURE|ERROR' "$f" || continue
-            printf '::error title=%s::%s\n' "$(basename "$f" .txt)" "$(grep -A12 -E '<<< (FAILURE|ERROR)' "$f" | head -c 3000 | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
+            { grep -m1 -A3 -E '<<< (FAILURE|ERROR)!' "$f" | tail -n +2 | cut -c1-400; grep -E '^Caused by:' "$f" | cut -c1-600; } > summary.txt
+            printf '::error title=%s::%s\n' "$(basename "$f" .txt)" "$(head -c 3500 summary.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
           done
           printf '::error title=maven::%s\n' "$(grep -E '^\[ERROR\]' mvn.log | head -40 | head -c 3500 | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
   python:
