@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: '3.12', cache: pip}
+        with: {python-version: '3.12'}
       - uses: astral-sh/setup-uv@v5
         with: {version: '0.6.14'}
       - run: uv sync --extra dev
@@ -57,7 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cp .env.example .env
-      - run: docker compose -f infrastructure/docker/docker-compose.yml config -q
+      - run: docker compose --env-file .env -f infrastructure/docker/docker-compose.yml config -q
       - run: docker build -t riskguard-transaction:ci services/transaction-service
       - run: docker build -t riskguard-fraud:ci services/fraud-service
       - run: docker build -t riskguard-frontend:ci frontend
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@0.28.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with: {scan-type: fs, scan-ref: ., severity: 'CRITICAL,HIGH', ignore-unfixed: true, exit-code: '1'}
       - uses: actions/dependency-review-action@v4
         if: github.event_name == 'pull_request'
