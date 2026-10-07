@@ -99,7 +99,8 @@ services:
     ports:
       - "${FRAUD_SERVICE_PORT:-8090}:8090"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8090/health || exit 1"]
+      # python:3.12-slim ships without wget/curl; probe with the interpreter itself.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=3)"]
       interval: 15s
       timeout: 5s
       retries: 10
