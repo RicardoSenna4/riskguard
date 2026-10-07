@@ -70,6 +70,23 @@ jobs:
       - run: docker build -t riskguard-transaction:ci services/transaction-service
       - run: docker build -t riskguard-fraud:ci services/fraud-service
       - run: docker build -t riskguard-frontend:ci frontend
+  e2e:
+    # Full stack (Compose) proving the event-driven flow across both services.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create CI-only .env
+        run: |
+          cp .env.example .env
+          sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 32)|" .env
+      - run: scripts/dev-up.sh
+      - run: scripts/e2e-event-flow.sh
+      - name: Compose diagnostics
+        if: failure()
+        run: |
+          docker compose --env-file .env -f infrastructure/docker/docker-compose.yml ps -a
+          docker compose --env-file .env -f infrastructure/docker/docker-compose.yml logs --tail=200
   dependency-scan:
     runs-on: ubuntu-latest
     steps:
