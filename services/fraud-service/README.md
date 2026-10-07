@@ -12,7 +12,7 @@ uv run uvicorn riskguard_fraud.app:app --app-dir src --port 8090
 PYTHONPATH=src uv run python -m riskguard_fraud.worker
 ```
 
-No Docker Compose, a API (`fraud-service`) aplica as migrações Alembic antes de subir e usa o banco `riskguard_fraud` no PostgreSQL compartilhado (ver [ADR-007](../../docs/decisions/ADR-007-fraud-service-postgresql.md)). Sem `DATABASE_URL`, o serviço cai para um SQLite local, útil apenas para experimentos rápidos.
+No Docker Compose, a API (`fraud-service`) aplica as migrações Alembic antes de subir e o consumidor Kafka roda como `fraud-worker`, com a mesma imagem. Ambos usam o banco `riskguard_fraud` no PostgreSQL compartilhado (ver [ADR-007](../../docs/decisions/ADR-007-fraud-service-postgresql.md)). Sem `DATABASE_URL`, o serviço cai para um SQLite local, útil apenas para experimentos rápidos.
 
 O endpoint `GET /health` é público. O endpoint `POST /api/v1/analyze` é útil para testes e integração local.
 

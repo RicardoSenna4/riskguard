@@ -11,7 +11,7 @@ O Docker Compose configurava o Fraud Service com `sqlite:////tmp/riskguard-fraud
 
 - O Fraud Service usa um banco próprio, `riskguard_fraud`, na mesma instância PostgreSQL do Compose. O Transaction Service continua em `riskguard`.
 - O banco é criado por `infrastructure/database/init/01-create-fraud-database.sh`, idempotente: roda automaticamente em volumes novos e é reexecutado por `scripts/dev-up.sh` para volumes já existentes.
-- O schema é versionado por Alembic. A API aplica `alembic upgrade head` antes de subir.
+- O schema é versionado por Alembic. A API aplica `alembic upgrade head` antes de subir; o consumidor (`fraud-worker`) só inicia depois que a API está saudável.
 - Driver: `psycopg` 3 (`postgresql+psycopg://`).
 
 ## Consequências
