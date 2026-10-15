@@ -41,7 +41,7 @@ A publicação da transação e o retorno da análise antifraude são observáve
 | --- | --- |
 | ![Evento transaction.created.v1](docs/images/kafka-transaction-created.png) | ![Evento fraud.analysis.completed.v1](docs/images/kafka-fraud-analysis.png) |
 
-### Observabilidade
+### Observabilidade com Prometheus e Grafana
 
 O dashboard Grafana reúne taxa de requisições, latência p95, backlog do Outbox e decisões antifraude.
 
@@ -51,7 +51,15 @@ O dashboard Grafana reúne taxa de requisições, latência p95, backlog do Outb
 
 A API possui especificação OpenAPI e autenticação Bearer JWT diretamente pelo Swagger UI.
 
-![Swagger da RiskGuard Transaction API](docs/images/swagger-api.png)
+![Visão geral da RiskGuard Transaction API no Swagger](docs/images/swagger-api.png)
+
+![Endpoints de clientes e transações](docs/images/swagger-endpoints-customers-transactions.png)
+
+![Endpoints de autenticação, revisão e dashboard](docs/images/swagger-endpoints-auth-review.png)
+
+![Autorização Bearer JWT no Swagger](docs/images/swagger-jwt-authorization.png)
+
+![Resposta HTTP 200 documentada no Swagger](docs/images/swagger-response-200.png)
 
 ### Integração contínua
 
