@@ -51,14 +51,13 @@ O dashboard Grafana reúne taxa de requisições, latência p95, backlog do Outb
 
 A API possui especificação OpenAPI e autenticação Bearer JWT diretamente pelo Swagger UI.
 
-<p align="center">
-  <img src="docs/images/swagger-endpoints-customers-transactions.png" alt="Endpoints de clientes e transações no Swagger" width="48%" />
-  <img src="docs/images/swagger-endpoints-auth-review.png" alt="Endpoints de autenticação, revisão e dashboard no Swagger" width="48%" />
-</p>
-<p align="center">
-  <img src="docs/images/swagger-jwt-authorization.png" alt="Autorização Bearer JWT no Swagger" width="48%" />
-  <img src="docs/images/swagger-response-200.png" alt="Resposta HTTP 200 documentada no Swagger" width="48%" />
-</p>
+![Endpoints de clientes e transações no Swagger](docs/images/swagger-endpoints-customers-transactions.png)
+
+![Endpoints de autenticação, revisão e dashboard no Swagger](docs/images/swagger-endpoints-auth-review.png)
+
+![Autorização Bearer JWT no Swagger](docs/images/swagger-jwt-authorization.png)
+
+![Resposta HTTP 200 documentada no Swagger](docs/images/swagger-response-200.png)
 
 ### Integração contínua
 
